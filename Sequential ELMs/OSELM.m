@@ -111,7 +111,7 @@ classdef OSELM
             obj.inputWeight = rand(obj.seed, obj.numberOfInputNeurons, obj.numberOfHiddenNeurons)*2-1;
             obj.biasOfHiddenNeurons = rand(obj.seed, 1, obj.numberOfHiddenNeurons);
             
-            if ~isa(obj.activationFunction,'function_handle') && ischar(obj.activationFunction)
+            if isequal(class(obj.activationFunction),'char')
                 switch lower(obj.activationFunction)
                     case {'sig','sigmoid'}
                         %%%%%%%% Sigmoid
@@ -130,7 +130,7 @@ classdef OSELM
                         obj.activationFunction = @(tempH) radbas(tempH);
                         %%%%%%%% More activation functions can be added here
                 end
-            else
+            elseif ~isequal(class(obj.activationFunction),'function_handle')
                 throw(MException('OSELM:activationFunctionError','Error Activation Function'));
             end
         end

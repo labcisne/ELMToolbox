@@ -106,7 +106,7 @@ classdef ELM
             obj.inputWeight = rand(obj.seed, obj.numberOfInputNeurons, obj.numberOfHiddenNeurons)*2-1;
             obj.biasOfHiddenNeurons = rand(obj.seed, 1, obj.numberOfHiddenNeurons);
             
-            if ~isa(obj.activationFunction,'function_handle') && ischar(obj.activationFunction)
+            if isequal(class(obj.activationFunction),'char')
                 switch lower(obj.activationFunction)
                     case {'sig','sigmoid'}
                         %%%%%%%% Sigmoid
@@ -125,7 +125,7 @@ classdef ELM
                         obj.activationFunction = @(tempH) radbas(tempH);
                         %%%%%%%% More activation functions can be added here
                 end
-            else
+            elseif ~isequal(class(obj.activationFunction),'function_handle')
                 throw(MException('ELM:activationFunctionError','Error Activation Function'));
             end
         end
@@ -133,7 +133,11 @@ classdef ELM
             tempH = X*self.inputWeight + repmat(self.biasOfHiddenNeurons,size(X,1),1);
             clear X;
             H = self.activationFunction(tempH);
-            self.outputWeight = pinv(H) * Y;
+            if size(H,1)>=size(H,2)
+                self.outputWeight = pinv(H' * H) * H' * Y;
+            else
+                self.outputWeight = H' * (pinv(H * H') * Y);
+            end
         end
         function Yhat = predict(self, X)
             tempH = X*self.inputWeight + repmat(self.biasOfHiddenNeurons,size(X,1),1);

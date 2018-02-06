@@ -114,7 +114,7 @@ classdef ORELM
             obj.inputWeight = rand(obj.seed, obj.numberOfInputNeurons, obj.numberOfHiddenNeurons)*2-1;
             obj.biasOfHiddenNeurons = rand(obj.seed, 1, obj.numberOfHiddenNeurons);
             
-            if ~isa(obj.activationFunction,'function_handle') && ischar(obj.activationFunction)
+            if isequal(class(obj.activationFunction),'char')
                 switch lower(obj.activationFunction)
                     case {'sig','sigmoid'}
                         %%%%%%%% Sigmoid
@@ -133,7 +133,7 @@ classdef ORELM
                         obj.activationFunction = @(tempH) radbas(tempH);
                         %%%%%%%% More activation functions can be added here
                 end
-            else
+            elseif ~isequal(class(obj.activationFunction),'function_handle')
                 throw(MException('ORELM:activationFunctionError','Error Activation Function'));
             end
         end       
@@ -146,12 +146,13 @@ classdef ORELM
             %--------------------------------------------------------------
             % ALM Algorithm for finding beta
             %--------------------------------------------------------------
+            ny = size(Y,2);
             [m,n]  = size(H) ;
             kappa  = 1/self.regularizationParameter;
             nIter  = 0 ;
             mu     = 2*m/norm(Y,1);
-            lambda = zeros(m,1);
-            e      = zeros(m,1);
+            lambda = zeros(m,ny);
+            e      = zeros(m,ny);
             converged_main = 0;
             muInv  = 1/mu ;
             if n<m
@@ -163,7 +164,7 @@ classdef ORELM
             while ~converged_main
                 lambdaScaled = muInv*lambda ;
                 nIter  = nIter + 1 ;
-                beta   = Proj_M*(Y-e+lambdaScaled );   %-------------(1)
+                beta   = Proj_M*(Y-e+lambdaScaled);    %-------------(1)
                 temp   = Y + lambdaScaled - H*beta;
                 e = sign(temp).*max(abs(temp)-muInv,0);%-------------(2)
                 lambda = lambda + mu*(Y - H*beta - e); %-------------(3)

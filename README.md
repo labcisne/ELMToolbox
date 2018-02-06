@@ -9,4 +9,4 @@
 *[Universidade Federal do Espírito Santo (UFES)](http://www.ufes.br)*
 
 MATLAB® implementation of Extreme Learning Machine and variants. Initial implementation by LabCisne students. :)
-###### Tested on MATLAB® R2017a
+###### Tested on MATLAB® R2015a, R2016b and R2017a
