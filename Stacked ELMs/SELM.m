@@ -88,13 +88,13 @@
 %
 %       Federal University of Espirito Santo (UFES), Brazil
 %       Computers and Neural Systems Lab. (LabCISNE)
-%       Authors:    F. K. Inaba, B. L. S. Silva, D. L. Cosmo
+%       Authors:    B. L. S. Silva, F. K. Inaba, D. L. Cosmo
 %       email:      labcisne@gmail.com
 %       website:    github.com/labcisne/ELMToolbox
 %       date:       Jan/2018
 
-classdef SELM
-    properties (SetAccess = protected, GetAccess = public)
+classdef SELM < Util
+    properties
         reducedDimension = 100
         stackedModules
         maxNumberOfModules = 100
@@ -102,11 +102,10 @@ classdef SELM
         numberOfHiddenNeurons = 1000;
         numberOfInputNeurons
         regularizationCoefficient = 1000
-        seed = [];
     end
     
     methods
-        function obj = SELM(varargin)
+        function self = SELM(varargin)
             
             if mod(nargin,2) ~= 0
                 exception = MException('SELM:ParameterError','Params must be given in pairs');
@@ -114,74 +113,63 @@ classdef SELM
             end
             
             for i=1:2:nargin
-                if isprop(obj,varargin{i})
-                    obj.(varargin{i}) = varargin{i+1};
+                if isprop(self,varargin{i})
+                    self.(varargin{i}) = varargin{i+1};
                 else
                     exception = MException('SELM:ParameterError','Given parameter does not exist');
                     throw (exception)
                 end
             end
             
-            if isnumeric(obj.seed) && ~isempty(obj.seed)
-                obj.seed = RandStream('mt19937ar','Seed', obj.seed);
-            elseif ~isa(obj.seed, 'RandStream')
-                obj.seed = RandStream.getGlobalStream();
-            end
+            self.seed = self.parseSeed();
+            self.activationFunction = self.parseActivationFunction(self.activationFunction);
             
-            if isequal(class(obj.activationFunction),'char')
-                switch lower(obj.activationFunction)
-                    case {'sig','sigmoid'}
-                        %%%%%%%% Sigmoid
-                        obj.activationFunction = @(tempH) 1 ./ (1 + exp(-tempH));
-                    case {'sin','sine'}
-                        %%%%%%%% Sine
-                        obj.activationFunction = @(tempH) sin(tempH);
-                    case {'hardlim'}
-                        %%%%%%%% Hard Limit
-                        obj.activationFunction = @(tempH) double(hardlim(tempH));
-                    case {'tribas'}
-                        %%%%%%%% Triangular basis function
-                        obj.activationFunction = @(tempH) tribas(tempH);
-                    case {'radbas'}
-                        %%%%%%%% Radial basis function
-                        obj.activationFunction = @(tempH) radbas(tempH);
-                        %%%%%%%% More activation functions can be added here
-                end
-            elseif ~isequal(class(obj.activationFunction),'function_handle')
-                exception = MException('SELM:activationFunctionError','Hidden activation function not supported');
-                throw (exception)
-            end
-            
-            obj.stackedModules = [];
+            self.stackedModules = [];
             
         end
         
         function self = train(self,inputData,outputData)
+            
+            if (size(inputData,2) ~= self.numberOfInputNeurons)
+                exception = MException('SELM:wrongNumberOfInputNeurons','Wrong input dimension!');
+                throw(exception);
+            end
+            
+            auxTime = toc;
             lastHiddenOutput = [];
             while length(self.stackedModules) < self.maxNumberOfModules
                 
-                params = cell(1,2*8);
+                params = cell(1,2*9);
                 params(1:2) = {'numberOfInputNeurons',self.numberOfInputNeurons};
-                params(3:4) = {'numberOfHiddenNeurons',self.numberOfHiddenNeurons};
+                params(3:4) = {'totalNumberOfHiddenNeurons',self.numberOfHiddenNeurons};
                 params(5:6) = {'regularizationParameter',self.regularizationCoefficient};
                 params(7:8) = {'activationFunction',self.activationFunction};
                 params(9:10) = {'reducedDimension',self.reducedDimension};
                 params(11:12) = {'isFirstLayer',isempty(self.stackedModules)};
                 params(13:14) = {'isLastLayer',isequal(length(self.stackedModules),self.maxNumberOfModules-1)};
                 params(15:16) = {'seed',self.seed};
+                params(17:18) = {'numberOfHiddenNeurons',self.numberOfHiddenNeurons - self.reducedDimension};
                 
                 newModule = SELMModule(params{:});
                 [newModule, lastHiddenOutput] = newModule.train(inputData,outputData,lastHiddenOutput);
                 self.stackedModules = [self.stackedModules, newModule];
             end
+            self.trainTime = toc - auxTime;
         end
         
         function outhat = predict(self, inputData)
+            if (size(inputData,2) ~= self.numberOfInputNeurons)
+                exception = MException('SELM:wrongNumberOfInputNeurons','Wrong input dimension!');
+                throw(exception);
+            end
+            
+            auxTime = toc;
             lastHiddenOutput = [];
             for i = 1:length(self.stackedModules)-1
                 lastHiddenOutput = self.stackedModules(i).hiddenLayerOutput(inputData,lastHiddenOutput)*self.stackedModules(i).pcaMatrix;
             end
             outhat = self.stackedModules(end).predict(inputData,lastHiddenOutput);
+            self.lastTestTime = toc - auxTime;
         end
         
         

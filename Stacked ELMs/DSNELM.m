@@ -89,25 +89,24 @@
 %
 %       Federal University of Espirito Santo (UFES), Brazil
 %       Computers and Neural Systems Lab. (LabCISNE)
-%       Authors:    F. K. Inaba, B. L. S. Silva, D. L. Cosmo
+%       Authors:    B. L. S. Silva, F. K. Inaba, D. L. Cosmo 
 %       email:      labcisne@gmail.com
 %       website:    github.com/labcisne/ELMToolbox
 %       date:       Jan/2018
 
-classdef DSNELM
-    properties (SetAccess = protected, GetAccess = public)
+classdef DSNELM < Util
+    properties 
         stackedModules = []
         maxNumberOfModules = 100
         activationFunction = 'sig'
         numberOfHiddenNeurons = 1000
         numberOfInputNeurons = []
         regularizationParameter = 1000
-        seed = []
     end
     
     methods
         
-        function obj = DSNELM(varargin)
+        function self = DSNELM(varargin)
             
             if mod(nargin,2) ~= 0
                 exception = MException('DSNELM:ParameterError','Params must be given in pairs');
@@ -115,49 +114,22 @@ classdef DSNELM
             end
             
             for i=1:2:nargin
-                if isprop(obj,varargin{i})
-                    obj.(varargin{i}) = varargin{i+1};
+                if isprop(self,varargin{i})
+                    self.(varargin{i}) = varargin{i+1};
                 else
                     exception = MException('DSNELM:ParameterError','Given parameter does not exist');
                     throw (exception)
                 end
             end
             
-            if isnumeric(obj.seed) && ~isempty(obj.seed)
-                obj.seed = RandStream('mt19937ar','Seed', obj.seed);
-            elseif ~isa(obj.seed, 'RandStream')
-                obj.seed = RandStream.getGlobalStream();
+            self.seed = self.parseSeed();
+            self.activationFunction = self.parseActivationFunction(self.activationFunction);
+            
+            if isempty(self.numberOfInputNeurons)
+                throw(MException('DSNELM:emptyNumberOfInputNeurons','Empty Number of Input Neurons'));
             end
             
-            if isequal(class(obj.activationFunction),'char')
-                switch lower(obj.activationFunction)
-                    case {'sig','sigmoid'}
-                        %%%%%%%% Sigmoid
-                        obj.activationFunction = @(tempH) 1 ./ (1 + exp(-tempH));
-                    case {'sin','sine'}
-                        %%%%%%%% Sine
-                        obj.activationFunction = @(tempH) sin(tempH);
-                    case {'hardlim'}
-                        %%%%%%%% Hard Limit
-                        obj.activationFunction = @(tempH) double(hardlim(tempH));
-                    case {'tribas'}
-                        %%%%%%%% Triangular basis function
-                        obj.activationFunction = @(tempH) tribas(tempH);
-                    case {'radbas'}
-                        %%%%%%%% Radial basis function
-                        obj.activationFunction = @(tempH) radbas(tempH);
-                        %%%%%%%% More activation functions can be added here
-                end
-            elseif ~isequal(class(obj.activationFunction),'function_handle')
-                exception = MException('DSNELM:activationFunctionError','Hidden activation function not supported');
-                throw (exception)
-            end
-            
-            if isempty(obj.numberOfInputNeurons)
-                throw(MException('RELM:emptyNumberOfInputNeurons','Empty Number of Input Neurons'));
-            end
-            
-            obj.stackedModules = [];
+            self.stackedModules = [];
             
         end
         
@@ -167,6 +139,7 @@ classdef DSNELM
                 throw(exception);
             end
             
+            auxTime = toc;
             lastLayerOutput = [];
             while length(self.stackedModules) < self.maxNumberOfModules
                 
@@ -190,6 +163,7 @@ classdef DSNELM
                 lastLayerOutput = newModule.predict(inputData);
                 self.stackedModules = [self.stackedModules, newModule];
             end
+            self.trainTime = toc - auxTime;
         end
         
         function lastLayerOutput = predict(self, inputData)
@@ -198,6 +172,7 @@ classdef DSNELM
                 throw(exception);
             end
             
+            aux = toc;
             lastLayerOutput = [];
             for i=1:length(self.stackedModules)
                 aux = zeros(size(inputData,1),size(inputData,2)+size(lastLayerOutput,2));
@@ -207,6 +182,7 @@ classdef DSNELM
                 
                 lastLayerOutput = self.stackedModules(i).predict(inputData);
             end
+            self.lastTestTime = toc - aux;
         end
         
         % Function used to predict the outputs in every module

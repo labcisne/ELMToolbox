@@ -6,22 +6,14 @@ clc
 X = X';
 Y = Y';
 
-dsnelm = DSNELM('numberOfInputNeurons',4);
-tic;
+dsnelm = DSNELM('numberOfInputNeurons',4,'numberOfHiddenNeurons',10);
 dsnelm = dsnelm.train(X,Y);
-tdsnelm = toc;
 
-fdsnelm = FDSNELM('numberOfInputNeurons',4);
-tic;
+fdsnelm = FDSNELM('numberOfInputNeurons',4,'numberOfHiddenNeurons',10);
 fdsnelm = fdsnelm.train(X,Y);
-tfdsnelm = toc;
 
-selm = SELM('numberOfInputNeurons',4);
-tic
+selm = SELM('numberOfInputNeurons',4,'numberOfHiddenNeurons',10,'reducedDimension',5);
 selm = selm.train(X,Y);
-tselm = toc;
 
-aeselm = AESELM('numberOfInputNeurons',4);
-tic;
+aeselm = AESELM('numberOfInputNeurons',4,'numberOfHiddenNeurons',10,'reducedDimension',5);
 aeselm = aeselm.train(X,Y);
-taeselm = toc;

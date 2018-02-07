@@ -85,7 +85,7 @@
 %       website:    github.com/labcisne/ELMToolbox
 %       date:       Jan/2018
 
-classdef OSRKELM
+classdef OSRKELM < Util
     properties
         kernelType = 'RBF_kernel'
         kernelParam = 0.1
@@ -94,19 +94,14 @@ classdef OSRKELM
         outputWeight = []
         xTr = []
         support = []
-        seed = []
         pMat = []
     end
     methods
-        function obj = OSRKELM(varargin)
+        function self = OSRKELM(varargin)
             for i = 1:2:nargin
-                obj.(varargin{i}) = varargin{i+1};
+                self.(varargin{i}) = varargin{i+1};
             end
-            if isnumeric(obj.seed) && ~isempty(obj.seed)
-                obj.seed = RandStream('mt19937ar','Seed', obj.seed);
-            elseif ~isa(obj.seed, 'RandStream')
-                obj.seed = RandStream.getGlobalStream();
-            end
+            self.seed = self.parseSeed();
         end
         
         function omega = kernel_matrix(self,Xte)
@@ -161,6 +156,7 @@ classdef OSRKELM
         end
         
         function self = train(self, X, Y)
+            auxTime = toc;
             self.support = randi(self.seed, size(X,1), [self.numberOfHiddenNeurons,1]);
             if isempty(self.xTr)
                 self.xTr = X(self.support,:);
@@ -177,10 +173,13 @@ classdef OSRKELM
                 self.pMat = self.pMat - self.pMat * Omega_train' * ((eye(size(Omega_train,1)) + Omega_train * self.pMat * Omega_train') \ Omega_train) * self.pMat;
                 self.outputWeight = self.outputWeight + self.pMat * Omega_train' * (Y - Omega_train * self.outputWeight);
             end
+            self.trainTime = toc - auxTime;
         end
         function Yhat = predict(self, Xte)
+            auxTime = toc;
             Omega_test = self.kernel_matrix(Xte);
             Yhat = Omega_test' * self.outputWeight;
+            self.lastTestTime = toc-auxTime;
         end
     end
 end

@@ -87,61 +87,21 @@
 %       website:    github.com/labcisne/ELMToolbox
 %       date:       Jan/2018
 
-classdef ReOSELM
+classdef ReOSELM < ELM
     properties
-        numberOfHiddenNeurons = 1000
-        activationFunction = 'sig'
         regularizationParameter = 1000
-        numberOfInputNeurons = []       
-        inputWeight = []
-        biasOfHiddenNeurons = []
-        outputWeight = []
-        seed = []
         pMat = []
     end
     methods
-        function obj = ReOSELM(varargin)
-            for i = 1:2:nargin
-                obj.(varargin{i}) = varargin{i+1};
-            end
-            if isnumeric(obj.seed) && ~isempty(obj.seed)
-                obj.seed = RandStream('mt19937ar','Seed', obj.seed);
-            elseif ~isa(obj.seed, 'RandStream')
-                obj.seed = RandStream.getGlobalStream();
-            end
-            if isempty(obj.numberOfInputNeurons)
-                throw(MException('ReOSELM:emptyNumberOfInputNeurons','Empty Number of Input Neurons'));
-            end
-            obj.inputWeight = rand(obj.seed, obj.numberOfInputNeurons, obj.numberOfHiddenNeurons)*2-1;
-            obj.biasOfHiddenNeurons = rand(obj.seed, 1, obj.numberOfHiddenNeurons);
-            
-            if isequal(class(obj.activationFunction),'char')
-                switch lower(obj.activationFunction)
-                    case {'sig','sigmoid'}
-                        %%%%%%%% Sigmoid
-                        obj.activationFunction = @(tempH) 1 ./ (1 + exp(-tempH));
-                    case {'sin','sine'}
-                        %%%%%%%% Sine
-                        obj.activationFunction = @(tempH) sin(tempH);
-                    case {'hardlim'}
-                        %%%%%%%% Hard Limit
-                        obj.activationFunction = @(tempH) double(hardlim(tempH));
-                    case {'tribas'}
-                        %%%%%%%% Triangular basis function
-                        obj.activationFunction = @(tempH) tribas(tempH);
-                    case {'radbas'}
-                        %%%%%%%% Radial basis function
-                        obj.activationFunction = @(tempH) radbas(tempH);
-                        %%%%%%%% More activation functions can be added here
-                end
-            elseif ~isequal(class(obj.activationFunction),'function_handle')
-                throw(MException('ReOSELM:activationFunctionError','Error Activation Function'));
-            end
+        function self = ReOSELM(varargin)
+            self = self@ELM(varargin{:});
         end
+        
         function self = train(self, X, Y)
+            auxTime = toc;
             tempH = X*self.inputWeight + repmat(self.biasOfHiddenNeurons,size(X,1),1);
             H = self.activationFunction(tempH);
-            clear X;
+            clear tempH;
             if isempty(self.pMat)
                 if(size(H,1)<self.numberOfHiddenNeurons)
                     self.pMat = self.regularizationParameter*eye(size(H,2)) - self.regularizationParameter * H' * pinv(eye(size(H,1))/self.regularizationParameter + H * H') * H;
@@ -159,13 +119,16 @@ classdef ReOSELM
                 end
                 self.outputWeight = self.outputWeight + self.pMat * H' * (Y - H * self.outputWeight);
             end
+            self.trainTime = toc - auxTime;
         end
         
         function Yhat = predict(self, X)
+            auxTime = toc;
             tempH = X*self.inputWeight + repmat(self.biasOfHiddenNeurons,size(X,1),1);
-            clear X;
+            clear tempH;
             H = self.activationFunction(tempH);
             Yhat = H * self.outputWeight;
+            self.lastTestTime = toc - auxTime;
         end
     end
 end

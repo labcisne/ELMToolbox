@@ -83,7 +83,7 @@
 %       website:    github.com/labcisne/ELMToolbox
 %       date:       Jan/2018
 
-classdef RKELM
+classdef RKELM < Util
     properties
         kernelType = 'RBF_kernel'
         kernelParam = 0.1
@@ -92,18 +92,14 @@ classdef RKELM
         outputWeight = []
         xTr = []
         support = []
-        seed = []
     end
     methods
-        function obj = RKELM(varargin)
+        function self = RKELM(varargin)
+%             self = self@ELM(varargin{:});
             for i = 1:2:nargin
-                obj.(varargin{i}) = varargin{i+1};
+                self.(varargin{i}) = varargin{i+1};
             end
-            if isnumeric(obj.seed) && ~isempty(obj.seed)
-                obj.seed = RandStream('mt19937ar','Seed', obj.seed);
-            elseif ~isa(obj.seed, 'RandStream')
-                obj.seed = RandStream.getGlobalStream();
-            end
+            self.seed = self.parseSeed();
         end
         
         function omega = kernel_matrix(self,Xte)
@@ -157,7 +153,8 @@ classdef RKELM
             end
         end
         
-        function self = train(self, X, Y)            
+        function self = train(self, X, Y)  
+            auxTime = toc;
             self.support = randi(self.seed, size(X,1), [self.numberOfHiddenNeurons,1]);
             self.xTr = X(self.support,:);
             Omega_train = self.kernel_matrix(X)';
@@ -166,10 +163,14 @@ classdef RKELM
             else
                 self.outputWeight = Omega_train' * ((eye(size(Omega_train,1))/self.regularizationParameter + Omega_train * Omega_train') \ Y);
             end
+            self.trainTime = toc - auxTime;
         end
+        
         function Yhat = predict(self, Xte)
+            auxTime = toc;
             Omega_test = self.kernel_matrix(Xte);
             Yhat = Omega_test' * self.outputWeight;
+            self.lastTestTime = toc - auxTime;
         end
     end
 end

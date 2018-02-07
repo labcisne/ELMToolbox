@@ -9,7 +9,10 @@ Y = Y';
 elm = ELM('numberOfInputNeurons',4);
 elm = elm.train(X,Y);
 
-grelm = GRELM('numberOfInputNeurons',4);
+orelm  = ORELM('numberOfInputNeurons', 4,'regularizationParameter',4);
+orelm = orelm.train(X,Y);
+
+grelm = GRELM('numberOfInputNeurons',4,'alpha',0.6);
 grelm = grelm.train(X,Y);
 
 kelm = KELM();

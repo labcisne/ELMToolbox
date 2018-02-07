@@ -6,9 +6,6 @@ clc
 X = X';
 Y = Y';
 
-orelm  = ORELM('numberOfInputNeurons', 4);
-orelm = orelm.train(X,Y);
-
 oselm  = OSELM('numberOfInputNeurons', 4, 'numberOfHiddenNeurons',100);
 oselm = oselm.train(X,Y);
 

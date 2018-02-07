@@ -83,12 +83,12 @@
 %
 %       Federal University of Espirito Santo (UFES), Brazil
 %       Computers and Neural Systems Lab. (LabCISNE)
-%       Authors:    F. K. Inaba, B. L. S. Silva, D. L. Cosmo
+%       Authors:    B. L. S. Silva, F. K. Inaba, D. L. Cosmo 
 %       email:      labcisne@gmail.com
 %       website:    github.com/labcisne/ELMToolbox
 %       date:       Jan/2018
 
-classdef FDSNELM
+classdef FDSNELM < Util
     properties (SetAccess = protected, GetAccess = public)
         stackedModules
         maxNumberOfModules = 100
@@ -97,12 +97,12 @@ classdef FDSNELM
         numberOfInputNeurons
         numberOfOutputNeurons
         regularizationParameter = 1000
-        seed = [];
+%         seed = [];
     end
     
     methods (Access = public)
         
-        function obj = FDSNELM(varargin)
+        function self = FDSNELM(varargin)
             
             if mod(nargin,2) ~= 0
                 exception = MException('FDSNELM:ParameterError','Params must be given in pairs');
@@ -110,45 +110,18 @@ classdef FDSNELM
             end
             
             for i=1:2:nargin
-                if isprop(obj,varargin{i})
-                    obj.(varargin{i}) = varargin{i+1};
+                if isprop(self,varargin{i})
+                    self.(varargin{i}) = varargin{i+1};
                 else
                     exception = MException('FDSNELM:ParameterError','Given parameter does not exist');
                     throw (exception)
                 end
             end
             
-            if isnumeric(obj.seed) && ~isempty(obj.seed)
-                obj.seed = RandStream('mt19937ar','Seed', obj.seed);
-            elseif ~isa(obj.seed, 'RandStream')
-                obj.seed = RandStream.getGlobalStream();
-            end
+            self.seed = self.parseSeed();
+            self.activationFunction = self.parseActivationFunction(self.activationFunction);
             
-            if isequal(class(obj.activationFunction),'char')
-                switch lower(obj.activationFunction)
-                    case {'sig','sigmoid'}
-                        %%%%%%%% Sigmoid
-                        obj.activationFunction = @(tempH) 1 ./ (1 + exp(-tempH));
-                    case {'sin','sine'}
-                        %%%%%%%% Sine
-                        obj.activationFunction = @(tempH) sin(tempH);
-                    case {'hardlim'}
-                        %%%%%%%% Hard Limit
-                        obj.activationFunction = @(tempH) double(hardlim(tempH));
-                    case {'tribas'}
-                        %%%%%%%% Triangular basis function
-                        obj.activationFunction = @(tempH) tribas(tempH);
-                    case {'radbas'}
-                        %%%%%%%% Radial basis function
-                        obj.activationFunction = @(tempH) radbas(tempH);
-                        %%%%%%%% More activation functions can be added here
-                end
-            elseif ~isequal(class(obj.activationFunction),'function_handle')
-                exception = MException('FDSNELM:activationFunctionError','Hidden activation function not supported');
-                throw (exception)
-            end
-            
-            obj.stackedModules = [];
+            self.stackedModules = [];
         end
         
         function [self,lastLayerOutput] = train(self,inputData,outputData)
@@ -158,13 +131,14 @@ classdef FDSNELM
                 throw(exception);
             end
             
+            auxTime = toc;
             self.numberOfOutputNeurons = size(outputData,2);
             inputHiddenWeights = -1 + 2*rand(self.seed,size(inputData,2),self.numberOfHiddenNeurons);
             biasOfHiddenNeurons = rand(self.seed,1,self.numberOfHiddenNeurons);
             lastInputDim = size(inputData,2);
             
-            params = cell(1,2*8);
-            params(1:2) = {'numberOfInputNeurons',lastInputDim};
+            params = cell(1,2*9);
+            params(1:2) = {'numberOfInputNeurons',self.numberOfInputNeurons};
             params(3:4) = {'numberOfHiddenNeurons',self.numberOfHiddenNeurons};
             params(5:6) = {'inputWeight',inputHiddenWeights};
             params(7:8) = {'isFirstLayer',true};
@@ -172,6 +146,7 @@ classdef FDSNELM
             params(11:12) = {'activationFunction',self.activationFunction};
             params(13:14) = {'seed',self.seed};
             params(15:16) = {'numberOfOutputNeurons',self.numberOfOutputNeurons};
+            params(17:18) = {'totalNumberOfInputNeurons',self.numberOfInputNeurons};
             
             newModule = FDSNELMModule(params{:});
             [newModule, lastHiddenBeforeAct,lastLayerOutput] = newModule.train(inputData,outputData,biasOfHiddenNeurons,[],[]);
@@ -180,7 +155,7 @@ classdef FDSNELM
             
             while length(self.stackedModules) < self.maxNumberOfModules
                 
-                params(1:2) = {'numberOfInputNeurons',lastInputDim};
+                params(1:2) = {'numberOfInputNeurons',self.numberOfOutputNeurons};
                 params(3:4) = {'numberOfHiddenNeurons',self.numberOfHiddenNeurons};
                 params(5:6) = {'inputWeight',[]};
                 params(7:8) = {'isFirstLayer',false};
@@ -188,6 +163,7 @@ classdef FDSNELM
                 params(11:12) = {'activationFunction',self.activationFunction};
                 params(13:14) = {'seed',self.seed};
                 params(15:16) = {'numberOfOutputNeurons',self.numberOfOutputNeurons};
+                params(17:18) = {'totalNumberOfInputNeurons',lastInputDim};
                 
                 newModule = FDSNELMModule(params{:});
                 [newModule, lastHiddenBeforeAct, lastLayerOutput] = newModule.train([],outputData,[],lastHiddenBeforeAct, lastLayerOutput);
@@ -196,6 +172,7 @@ classdef FDSNELM
                 self.stackedModules = [self.stackedModules, newModule];
                 
             end
+            self.trainTime = toc - auxTime;
             
         end
         
@@ -205,6 +182,7 @@ classdef FDSNELM
                 throw(exception);
             end
             
+            auxTime = toc;
             [lastLayerOutput, lastHiddenBeforeAct] = self.stackedModules(1).predict(inputData,[],[]);
             
             for i = 2:length(self.stackedModules)-1
@@ -213,7 +191,7 @@ classdef FDSNELM
             end
             
             pred = self.stackedModules(end).predict([],lastHiddenBeforeAct,lastLayerOutput);
-            
+            self.lastTestTime = toc - auxTime;
         end
         
         % Function used to predict the outputs in every module
