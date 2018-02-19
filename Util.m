@@ -8,27 +8,6 @@ classdef (Abstract) Util
     end
     methods
         
-        function acc = calculateAccuracy(~,pred,target)
-            [~,argmax] = max(pred,[],2);
-            [~,amax] = max(target,[],2);
-            acc = sum(argmax == amax)/length(amax);
-        end
-        
-        function rmse = calculateRMSE(~,pred, target)
-            rmse = sqrt(mean(mean((target - pred).^2)));
-        end
-        
-        function projMatrix = PCA(~,A, numEigs)
-            %             A = matrix;
-            %             B = A - mean(A,1);
-            B = bsxfun(@(x,y) x-y,A,mean(A,1));
-            C = cov(B);
-            [Ve,Va] = eig(C);
-            [~,I] = sort(diag(Va),'descend');
-            Ve2 = Ve(:,I);
-            projMatrix = Ve2(:,1:numEigs);
-        end
-        
         function actFun = parseActivationFunction(~,actFun)
             if isequal(class(actFun),'char')
                 switch lower(actFun)
@@ -68,5 +47,27 @@ classdef (Abstract) Util
     methods (Abstract)
         self = train(X,Y);
         pred = predict(X);
+    end
+    methods (Static)
+        function acc = calculateAccuracy(pred,target)
+            [~,argmax] = max(pred,[],2);
+            [~,amax] = max(target,[],2);
+            acc = sum(argmax == amax)/length(amax);
+        end
+        
+        function rmse = calculateRMSE(pred, target)
+            rmse = sqrt(mean(mean((target - pred).^2)));
+        end
+        
+        function projMatrix = PCA(A, numEigs)
+            %             A = matrix;
+            %             B = A - mean(A,1);
+            B = bsxfun(@(x,y) x-y,A,mean(A,1));
+            C = cov(B);
+            [Ve,Va] = eig(C);
+            [~,I] = sort(diag(Va),'descend');
+            Ve2 = Ve(:,I);
+            projMatrix = Ve2(:,1:numEigs);
+        end
     end
 end
