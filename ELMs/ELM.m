@@ -91,21 +91,9 @@ classdef ELM < Util
     end
     methods
         function self = ELM(varargin)
-            
-            if mod(nargin,2) ~= 0
-                exception = MException('ELM:params','Params must be given in pairs');
-                throw (exception)
+            for i = 1:2:nargin
+                self.(varargin{i}) = varargin{i+1};
             end
-            
-            for i=1:2:nargin
-                if isprop(self,varargin{i})
-                    self.(varargin{i}) = varargin{i+1};
-                else
-                    exception = MException('ELM:params','Given parameter does not exist');
-                    throw (exception)
-                end
-            end
-            
             if isempty(self.numberOfInputNeurons)
                 throw(MException('ELM:emptynumberOfInputNeurons','Empty Number of Input Neurons'));
             end

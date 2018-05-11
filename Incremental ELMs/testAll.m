@@ -1,27 +1,58 @@
-tic;
+load iris_dataset.mat
+X    = irisInputs';
+Y    = irisTargets';
+[~,Y] = max(Y,[],2); % Only one dimensional targets are supported by this method
+belm  = BELM('numberOfInputNeurons', 4, 'maxNumberOfHiddenNeurons',100);
+self.calculateRMSEbelm  = belm.train(X, Y);
+Yhat = belm.predict(X);
 
-[a,b] = iris_dataset;
-a = a';
-b = b';
+load iris_dataset.mat
+X    = irisInputs';
+Y    = irisTargets';
+[~,Y] = max(Y,[],2);    % Only one dimensional targets are supported by this method
+ifelm  = CIELM('numberOfInputNeurons', 4, 'numberOfHiddenNeurons',100);
+ifelm  = ifelm.train(X, Y);
+Yhat = ifelm.predict(X);
 
-elm = EMELM('maxNumberOfHiddenNeurons',100,'numberOfInputNeurons',4);
-elm = elm.train(a,b);
+load iris_dataset.mat
+X    = irisInputs';
+Y    = irisTargets';
+eemelm  = EEMELM('numberOfInputNeurons', 4, 'maxNumberOfHiddenNeurons',100);
+eemelm  = eemelm.train(X, Y);
+Yhat = eemelm.predict(X);
 
-elm2 = EEMELM('numberOfInputNeurons', 4, 'maxNumberOfHiddenNeurons',100);
-elm2 = elm2.train(a,b);
+load iris_dataset.mat
+X    = irisInputs';
+Y    = irisTargets';
+emelm  = EMELM('numberOfInputNeurons', 4, 'numberOfHiddenNeurons',100);
+emelm  = emelm.train(X, Y);
+Yhat = emelm.predict(X);
 
-elm3  = CIELM('numberOfInputNeurons', 4, 'numberOfHiddenNeurons',100);
-elm3  = elm3.train(a, max(b,[],2));
+load iris_dataset.mat
+X    = irisInputs';
+Y    = irisTargets';
+ielm  = IELM('numberOfInputNeurons', 4, 'numberOfHiddenNeurons',100);
+ielm  = ielm.train(X, Y);
+Yhat = ielm.predict(X);
 
-elm4 = BELM('numberOfInputNeurons',4,'maxNumberOfHiddenNeurons',100);
-elm4 = elm4.train(a, max(b,[],2));
+load iris_dataset.mat
+X    = irisInputs';
+Y    = irisTargets';
+ifelm  = IFELM('numberOfInputNeurons', 4, 'numberOfHiddenNeurons',100);
+ifelm  = ifelm.train(X, Y);
+Yhat = ifelm.predict(X);
 
-elm5 = IELM('numberOfInputNeurons', 4, 'numberOfHiddenNeurons',100);
-elm5 = elm5.train(a,b);
+load iris_dataset.mat
+X    = irisInputs';
+Y    = irisTargets';
+irelm  = IRELM('numberOfInputNeurons', 4, 'numberOfHiddenNeurons',100);
+irelm  = irelm.train(X, Y);
+Yhat = irelm.predict(X);
 
-elm6 = IRELM('numberOfInputNeurons', 4, 'maxNumberOfHiddenNeurons',100);
-elm6 = elm6.train(a,b);
 
-elm7 = RIELM('numberOfInputNeurons', 4, 'maxNumberOfHiddenNeurons',100);
-elm7 = elm7.train(a,b);
-
+load iris_dataset.mat
+X    = irisInputs';
+Y    = irisTargets';
+rielm  = RIELM('numberOfInputNeurons', 4, 'numberOfHiddenNeurons',100);
+rielm  = rielm.train(X, Y);
+Yhat = rielm.predict(X);

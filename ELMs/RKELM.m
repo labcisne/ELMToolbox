@@ -165,7 +165,6 @@ classdef RKELM < Util
             end
             self.trainTime = toc - auxTime;
         end
-        
         function Yhat = predict(self, Xte)
             auxTime = toc;
             Omega_test = self.kernel_matrix(Xte);

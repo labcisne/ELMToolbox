@@ -70,7 +70,7 @@
 %       load iris_dataset.mat
 %       X    = irisInputs';
 %       Y    = irisTargets';
-%       selm  = SELM('numberOfInputNeurons', 4, 'numberOfHiddenNeurons', 100);
+%       selm  = SELM('numberOfInputNeurons', 4, 'numberOfHiddenNeurons', 150);
 %       selm  = selm.train(X, Y);
 %       Yhat = selm.predict(X)
 
@@ -148,7 +148,11 @@ classdef SELM < Util
                 params(11:12) = {'isFirstLayer',isempty(self.stackedModules)};
                 params(13:14) = {'isLastLayer',isequal(length(self.stackedModules),self.maxNumberOfModules-1)};
                 params(15:16) = {'seed',self.seed};
-                params(17:18) = {'numberOfHiddenNeurons',self.numberOfHiddenNeurons - self.reducedDimension};
+                if isempty(self.stackedModules) % First module
+                    params(17:18) = {'numberOfHiddenNeurons',self.numberOfHiddenNeurons};
+                else
+                    params(17:18) = {'numberOfHiddenNeurons',self.numberOfHiddenNeurons - self.reducedDimension};
+                end
                 
                 newModule = SELMModule(params{:});
                 [newModule, lastHiddenOutput] = newModule.train(inputData,outputData,lastHiddenOutput);

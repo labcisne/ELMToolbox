@@ -96,7 +96,6 @@ classdef ReOSELM < ELM
         function self = ReOSELM(varargin)
             self = self@ELM(varargin{:});
         end
-        
         function self = train(self, X, Y)
             auxTime = toc;
             tempH = X*self.inputWeight + repmat(self.biasOfHiddenNeurons,size(X,1),1);
@@ -125,8 +124,8 @@ classdef ReOSELM < ELM
         function Yhat = predict(self, X)
             auxTime = toc;
             tempH = X*self.inputWeight + repmat(self.biasOfHiddenNeurons,size(X,1),1);
-            clear tempH;
             H = self.activationFunction(tempH);
+            clear tempH;
             Yhat = H * self.outputWeight;
             self.lastTestTime = toc - auxTime;
         end

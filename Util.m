@@ -1,4 +1,4 @@
-classdef (Abstract) Util
+classdef (Abstract) Util < handle
     properties (SetAccess = protected, GetAccess = public)
         trainTime
         lastTestTime
@@ -7,7 +7,6 @@ classdef (Abstract) Util
         seed = []
     end
     methods
-        
         function actFun = parseActivationFunction(~,actFun)
             if isequal(class(actFun),'char')
                 switch lower(actFun)
@@ -49,19 +48,26 @@ classdef (Abstract) Util
         pred = predict(X);
     end
     methods (Static)
-        function acc = calculateAccuracy(pred,target)
-            [~,argmax] = max(pred,[],2);
-            [~,amax] = max(target,[],2);
-            acc = sum(argmax == amax)/length(amax);
+        function [dta, param] = normalizeData(dta, param) 
+            if nargin == 1
+                mindta = min(dta);
+                maxdta = max(dta);
+                maxdta(maxdta == mindta) = maxdta(maxdta == mindta) + eps(maxdta(maxdta == mindta));
+                param = [mindta; maxdta];
+            else
+                mindta = param(1,:);
+                maxdta = param(2,:);
+            end
+            dta = -1 + 2*(dta - mindta)./(maxdta - mindta);
         end
-        
-        function rmse = calculateRMSE(pred, target)
-            rmse = sqrt(mean(mean((target - pred).^2)));
+        function dta = unNormalizeData(dta, param)
+            mindta = param(1,:);
+            maxdta = param(2,:);
+            dta = ((dta+1)/2).*(maxdta - mindta) + mindta;
         end
-        
         function projMatrix = PCA(A, numEigs)
             %             A = matrix;
-            %             B = A - mean(A,1);
+            %                 B = A - mean(A,1);
             B = bsxfun(@(x,y) x-y,A,mean(A,1));
             C = cov(B);
             [Ve,Va] = eig(C);

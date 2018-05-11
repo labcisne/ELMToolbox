@@ -3,10 +3,7 @@
 %
 %   This code was implemented based on the following paper:
 %
-%   [1] B. L. S. Silva, F. K. Inaba, P. M. Ciarelli (2018)
-%       A fast algorithm to train a Deep Stacked Network using Extreme Learning Machine
-%       Submitted to International Joint Conference on Neural Networks (IJCNN) 2018
-%       Currently under review (06/02/18).
+%   To be published...
 %
 %   Attributes:
 %       Attributes between *.* must be informed.

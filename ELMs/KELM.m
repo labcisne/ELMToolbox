@@ -1,5 +1,5 @@
-% KELM - Kernel Extreme Learning Machine Class
-%   Train and Predict a SLFN based on Kernel Extreme Learning Machine
+% KELM - Kernel ExTreme Learning Machine Class
+%   Train and Predict a SLFN based on Kernel ExTreme Learning Machine
 %
 %   This code was implemented based on the following paper:
 %

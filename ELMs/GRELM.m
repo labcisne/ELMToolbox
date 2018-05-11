@@ -110,7 +110,6 @@ classdef GRELM < ELM
             auxTime = toc;
             tempH = X*self.inputWeight + repmat(self.biasOfHiddenNeurons,size(X,1),1);
             H = self.activationFunction(tempH);
-            H = normr(H);
             clear tempH;
             
             [N, Ntil] = size(H);
@@ -159,7 +158,6 @@ classdef GRELM < ELM
             tempH = X*self.inputWeight + repmat(self.biasOfHiddenNeurons,size(X,1),1);
             clear X;
             H = self.activationFunction(tempH);
-            H = normr(H);
             Yhat = H * self.outputWeight;
             self.lastTestTime = toc - auxTime;
         end

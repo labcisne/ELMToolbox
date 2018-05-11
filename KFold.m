@@ -1,28 +1,28 @@
 %   KFold - KFold Cross Validation Class
 %   Use the K-Fold Cross Validation method to find the best parameters of a classifier using a dataset
 %
-%   Attributes: 
-%       Attributes between *.* must be informed. 
+%   Attributes:
+%       Attributes between *.* must be informed.
 %       KFold objects must be created using at least 4 parameters (numberOfFolds, classifierHandle, paramNames, paramValues)
 %       See the Usage Example.
 %
-%               *numberOfFolds*:    Number of folds (K) to be used 
+%               *numberOfFolds*:    Number of folds (K) to be used
 %               Accepted Values:    Any integer between 2 and the number of samples of the dataset (leave one out).
 %
 %            *classifierHandle*:    A function handle used to construct a classifier.
 %               Accepted Values:    Any classifier constructor that uses field-value pairs to construct its object.
 %                                   The classifier class must inherit from the Util class
 %
-%                  *paramNames*:    A cell containing the names of the parameters that will be tested   
-%               Accepted Values:    A cell with char arrays (not strings). 
+%                  *paramNames*:    A cell containing the names of the parameters that will be tested
+%               Accepted Values:    A cell with char arrays (not strings).
 %
-%                 *paramValues*:    A cell containing the values of the parameters that will be tested   
-%               Accepted Values:    A cell with numeric arrays. 
+%                 *paramValues*:    A cell containing the values of the parameters that will be tested
+%               Accepted Values:    A cell with numeric arrays.
 %                                   The cell should have the same length of 'paramNames', and the positions should correspond to the names
 %                                   (the first position of paramValues should be the values of the first paramName)
-%                                   
-%                  isRegression:    boolean value indicating if the algorithm should use rmse (True) or accuracy (false)
-%               Accepted Values:    true or false. (default = false)
+%
+%                  metricHandle:    name or instance of a Metric subclass. 
+%               Accepted Values:    Any Metric subclass (Accuray, RMSE, RRMSE, aRRMSE, etc)
 %
 %                shuffleSamples:    boolean value indicating if the samples should be shuffled
 %               Accepted Values:    true or false. (default = true)
@@ -32,10 +32,10 @@
 %               Accepted Values:    true or false. (default = true)
 %
 %                     seedFolds:    Number to be used as seed to shuffle the samples. If not defined, the global randStream is used.
-%               Accepted Values:    An integer between 0 and 2^32 - 1. 
+%               Accepted Values:    An integer between 0 and 2^32 - 1.
 %
-%                     seedClass:    Number to be used as seed to construct the classifier. If not defined, the global randStream is used.    
-%               Accepted Values:    An integer between 0 and 2^32 - 1. 
+%                     seedClass:    Number to be used as seed to construct the classifier. If not defined, the global randStream is used.
+%               Accepted Values:    An integer between 0 and 2^32 - 1.
 %
 %
 %   Methods:
@@ -44,14 +44,14 @@
 %                                   Creates a Kfold object. The parameters shuffleSamples, stratified, seedFolds and seedClass are optional.
 %                                   See Attributes.
 %
-%  paramStruct = obj.start(X,Y):    Method to test all combinations of parameters given in the KFold constructor (paramNames and paramValues attributes)     
+%  paramStruct = obj.start(X,Y):    Method to test all combinations of parameters given in the KFold constructor (paramNames and paramValues attributes)
 %                                   in the classifier constructed by classifierHandle. Returns an struct containing three fields:
-%                                   metric, paramCell and ties, corresponding to the metric obtained in the training process, 
-%                                   a cell containing the best parameter combination and the combinations that returned the same metric than 
+%                                   metric, paramCell and ties, corresponding to the metric obtained in the training process,
+%                                   a cell containing the best parameter combination and the combinations that returned the same metric than
 %                                   the best, respectively.
 %                                   X is the matrix where each line is a sample and Y is a matrix where each line is a binary vector with only one
 %                                   position with value 1, indicating the class of the respective sample.
-%                            
+%
 %   Usage Example:
 %
 %       load iris_dataset.mat
@@ -67,7 +67,7 @@
 %       param = {'regularizationParameter'};
 %       paramGrid = {2.^(-20:1:20)};
 %
-%       kfold = KFold(5,class,param,paramGrid);
+%       kfold = KFold(5,class,param,paramGrid,Accuracy);
 %
 %       pStrc = kfold.start(X(idxTr,:),Y(idxTr,:));
 %
@@ -76,6 +76,7 @@
 %       relm = relm.train(X(idxTr,:),Y(idxTr,:));
 %
 %       yh = relm.predict(X(idxTe,:));
+%       acc = Accuracy.calculate(yh,Y(idxTe,:))
 %
 %   License:
 %
@@ -91,7 +92,7 @@
 %
 %       Federal University of Espirito Santo (UFES), Brazil
 %       Computers and Neural Systems Lab. (LabCISNE)
-%       Authors:    B. L. S. Silva, F. K. Inaba, D. L. Cosmo 
+%       Authors:    B. L. S. Silva, F. K. Inaba, D. L. Cosmo
 %       email:      labcisne@gmail.com
 %       website:    github.com/labcisne/ELMToolbox
 %       date:       Jan/2018
@@ -102,7 +103,7 @@ classdef KFold
         paramValues
         classifierHandle
         numberOfFolds
-        isRegression = false;
+        metricHandle
         shuffleSamples
         stratified
         seedFolds = []
@@ -125,8 +126,8 @@ classdef KFold
         end
     end
     methods
-        function obj = KFold(numberOfFolds,classifierHandle,paramNames,paramValues,isRegression,shuffleSamples,stratified,seedFolds,seedClass)
-
+        function obj = KFold(numberOfFolds,classifierHandle,paramNames,paramValues,metricHandle,shuffleSamples,stratified,seedFolds,seedClass)
+            
             if nargin < 4
                 exception = MException('KFold:params','Not enough parameters!');
                 throw (exception)
@@ -138,7 +139,6 @@ classdef KFold
             
             % Default values
             if (nargin == 4)
-                isRegression = false;
                 shuffleSamples = true;
                 stratified = true;
             elseif nargin == 5
@@ -147,7 +147,7 @@ classdef KFold
             elseif nargin == 6
                 stratified = true;
             end
-
+            
             if isequal(class(classifierHandle),'function_handle')
                 obj.classifierHandle = classifierHandle;
             else
@@ -159,12 +159,18 @@ classdef KFold
                 exception = MException('KFold:classifierHandle','classifierHandle must be a handle to a constructor of a subclass of Util');
                 throw (exception)
             end
-
+            
+            if ~isa(metricHandle,'Metric')
+                exception = MException('KFold:metricHandle','metricHandle must be a subclass of Metric');
+                throw (exception)
+            else
+                obj.metricHandle = metricHandle;
+            end
+            
             obj.numberOfFolds = numberOfFolds;
-            obj.isRegression = isRegression;
             obj.shuffleSamples = shuffleSamples;
             obj.stratified = stratified;
-
+            
             if (length(paramNames) == length(paramValues))
                 obj.paramNames = paramNames;
                 obj.paramValues = paramValues;
@@ -172,9 +178,9 @@ classdef KFold
                 exception = MException('KFold:paramsGrid','List and grid of parameters must have the same length');
                 throw (exception)
             end
-
+            
         end
-
+        
         function paramStruct = start(self,trData,trLab)
             
             if (self.shuffleSamples)
@@ -190,7 +196,7 @@ classdef KFold
             
             tamFold = floor(length(perm)/self.numberOfFolds);
             
-            if (~self.isRegression && self.stratified)
+            if (~self.metricHandle.isRegressionMetric && self.stratified)
                 % Generate folds with approximately the same proportion of samples in every class
                 % (similar to the crossvalind function, but instead of return the fold of every sample,
                 % it constructs a vector with the indices of every fold, i.e., considering folds with 30 samples,
@@ -214,7 +220,7 @@ classdef KFold
                         fold{k} = [fold{k}; idxSamples{l}((k-1)*samplesPerFold(l)+1:k*samplesPerFold(l))];
                     end
                 end
-
+                
                 % Recover missing samples
                 perm = cell2mat(fold);
                 missingSamples = setdiff(oldPerm,perm(:));
@@ -224,19 +230,15 @@ classdef KFold
                 
                 if (foldSizeDiff ~= 0)
                     aux = reshape(missingSamples,foldSizeDiff,floor(length(missingSamples)/foldSizeDiff));
-                    perm = [perm;aux];  
+                    perm = [perm;aux];
                 end
                 
                 perm = oldPerm(perm(:));
             end
-
-%             metric = zeros(1,self.numberOfFolds);
-            if (self.isRegression)
-                bestMetric = Inf;
-            else
-                bestMetric = 0;
-            end
-
+            
+            %             metric = zeros(1,self.numberOfFolds);
+            bestMetric = self.metricHandle.worstCase;
+            
             indices = self.getGridIndices;
             
             for i=1:size(indices,1)
@@ -246,11 +248,7 @@ classdef KFold
                     classParams{2*j} = self.paramValues{j}(indices(i,j));
                 end
                 
-                if (self.isRegression)
-                    metric = Inf(1,self.numberOfFolds);
-                else
-                    metric = zeros(1,self.numberOfFolds);               
-                end
+                metric = self.metricHandle.worstCase.*ones(1,self.numberOfFolds);
                 
                 for k=1:self.numberOfFolds
                     if isempty(self.seedClass)
@@ -266,40 +264,36 @@ classdef KFold
                     if (isempty(pred)) %sometimes libsvm does not converge
                         continue;
                     end
-                    if (self.isRegression)
-                        metric(k) = kClassifier.calculateRMSE(trLab(testFoldIdx,:),pred);
-                    else
-                        metric(k) = kClassifier.calculateAccuracy(trLab(testFoldIdx,:),pred);
-                    end
+                    metric(k) = self.metricHandle.calculate(trLab(testFoldIdx,:),pred);
                 end
+                
                 
                 if isequal(mean(metric),bestMetric)
                     paramStruct.ties = [paramStruct.ties; classParams];
                 end
                 
-                if (self.isRegression && mean(metric) < bestMetric)
+                if (self.metricHandle.isBetter(mean(metric),bestMetric))
                     paramCell = classParams;
-%                     paramMap('metric') = mean(metric);
-                    bestMetric = mean(metric);
-                    paramStruct.ties = [];
-                end
-                if (~self.isRegression && mean(metric) > bestMetric)
-                    paramCell = classParams;
-%                     paramMap('metric') = mean(metric);
                     bestMetric = mean(metric);
                     paramStruct.ties = [];
                 end
                 
             end
-
+            
             if ~isempty(paramStruct.ties)
                 warning('There were ties in the KFold process, check the ties field of the returned paramStruct');
             end
             
             paramStruct.metric = bestMetric;
-            paramStruct.paramCell = paramCell;
+            paramStruct.paramCell = [];
+            if (~isempty(paramStruct.ties))
+                aux = paramStruct.ties;
+                paramStruct.ties = [paramStruct.paramCell; aux(1:end-1,:)];
+                paramStruct.paramCell = aux(end,:);
+            else
+                paramStruct.paramCell = paramCell;
+            end
             
-
         end
     end
 end

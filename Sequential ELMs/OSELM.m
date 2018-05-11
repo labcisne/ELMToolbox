@@ -115,8 +115,8 @@ classdef OSELM < ELM
         function Yhat = predict(self, X)
             auxTime = toc;
             tempH = X*self.inputWeight + repmat(self.biasOfHiddenNeurons,size(X,1),1);
-            clear tempH;
             H = self.activationFunction(tempH);
+            clear tempH;
             Yhat = H * self.outputWeight;
             self.lastTestTime = toc - auxTime;
         end

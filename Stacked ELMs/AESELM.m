@@ -70,7 +70,7 @@
 %       load iris_dataset.mat
 %       X    = irisInputs';
 %       Y    = irisTargets';
-%       aeselm  = AESELM('numberOfInputNeurons', 4, 'numberOfHiddenNeurons', 100);
+%       aeselm  = AESELM('numberOfInputNeurons', 4, 'numberOfHiddenNeurons', 150);
 %       aeselm  = aeselm.train(X, Y);
 %       Yhat = aeselm.predict(X)
 

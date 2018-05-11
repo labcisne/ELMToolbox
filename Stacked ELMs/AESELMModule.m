@@ -3,9 +3,9 @@
 %
 %   This code was implemented based on the following paper:
 %
-%   [1] Zhou, H., Huang, G.-B., Lin, Z., Wang, H., & Soh, Y. C. (2014).
-%       Stacked Extreme Learning Machines.
-%       IEEE Transactions on Cybernetics, PP(99), 1.
+%   [1] Zhou, H., Huang, G.-B., Lin, Z., Wang, H., & Soh, Y. C. (2014). 
+%       Stacked Extreme Learning Machines. 
+%       IEEE Transactions on Cybernetics, PP(99), 1. 
 %       https://doi.org/10.1109/TCYB.2014.2363492
 %       (http://ieeexplore.ieee.org/document/6937189/)
 %
@@ -31,7 +31,6 @@ classdef AESELMModule < SELMModule
                 throw(exception);
             end
             
-            auxTime = tic;
             Hnew = self.activationFunction(inputData*self.inputWeight + repmat(self.biasOfHiddenNeurons,[size(inputData,1),1]));
             self.inputWeight = [];
             
@@ -57,14 +56,19 @@ classdef AESELMModule < SELMModule
             end
             
             if ~(self.isLastLayer)
-                self.pcaMatrix = self.PCA(self.outputWeight',self.reducedDimension);
+                A = self.outputWeight';
+%                 B = A - mean(A,1);
+                B = bsxfun(@(x,y) x-y,A,mean(A,1));
+                C = cov(B);
+                [Ve,Va] = eig(C);
+                [~,I] = sort(diag(Va),'descend');
+                Ve2 = Ve(:,I);
+                self.pcaMatrix = Ve2(:,1:self.reducedDimension);
                 projectedOutput = H*self.pcaMatrix;
-                self.outputWeight = []; %Comment this if you want to see how a metric 'evolves' over time
             else
                 self.pcaMatrix = [];
                 projectedOutput = [];
             end
-            self.trainTime = toc - auxTime;
         end
         
         function H = hiddenLayerOutput(self, inputData, lastHiddenOutput)
@@ -79,9 +83,7 @@ classdef AESELMModule < SELMModule
                 exception = MException('AESELMModule:inDim','Wrong input dimension!');
                 throw(exception);
             end
-            auxTime = toc;
             out = self.hiddenLayerOutput(inputData,lastHiddenOutput)*self.outputWeight;
-            self.lastTestTime = toc - auxTime;
         end
         
     end

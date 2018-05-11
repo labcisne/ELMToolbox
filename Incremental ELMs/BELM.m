@@ -177,7 +177,7 @@ classdef BELM < Util
                     iH2e = self.iActFun(H2e');
                     Wnew = pinvX*iH2e;  % Wnew = a2n
                     a2nX = X*Wnew;
-                    Bnew = self.calculateRMSE(iH2e,a2nX);  % Bnew = b2n
+                    Bnew = RMSE.calculate(iH2e,a2nX);  % Bnew = b2n
                     H2e = self.activationFunction(a2nX + repmat(Bnew,size(X,1),1));
                     H2e = mapminmax('reverse',H2e,PS);
                     betaN = H2e'*E/(H2e'*H2e);

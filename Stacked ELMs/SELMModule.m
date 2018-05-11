@@ -48,7 +48,7 @@ classdef SELMModule < RELM
             if ~(self.isLastLayer)
                 self.pcaMatrix = self.PCA(self.outputWeight',self.reducedDimension);
                 projectedOutput = H*self.pcaMatrix;
-                self.outputWeight = []; %Comment this if you want to see how a metric 'evolves' over time
+                %                 self.outputWeight = []; %Uncomment this if you want to see how a metric 'evolves' over time
             else
                 self.pcaMatrix = [];
                 projectedOutput = [];
@@ -65,10 +65,6 @@ classdef SELMModule < RELM
         end
         
         function out = predict(self, inputData, lastHiddenOutput)
-            if (size(inputData,2) ~= self.numberOfInputNeurons)
-                exception = MException('AESELMModule:inDim','Wrong input dimension!');
-                throw(exception);
-            end
             auxTime = toc;
             out = self.hiddenLayerOutput(inputData,lastHiddenOutput)*self.outputWeight;
             self.lastTestTime = toc - auxTime;
